@@ -4,9 +4,9 @@ const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 const Document = require('../models/Document');
 
-// Auto-create uploads folder if it doesn't exist
 const uploadDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -30,8 +30,18 @@ router.post('/', upload.single('pdf'), async (req, res) => {
     const dataBuffer = fs.readFileSync(req.file.path);
     const data = await pdfParse(dataBuffer);
 
+    // Get userId from token if provided
+    let userId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.id;
+    }
+
     const doc = new Document({
-      filename: req.file.filename,
+      userId,
+      filename: req.file.originalname,
       text: data.text
     });
     await doc.save();

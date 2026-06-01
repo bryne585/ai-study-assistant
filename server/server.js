@@ -9,11 +9,13 @@ const summaryRoute = require("./routes/summary");
 const flashcardsRoute = require('./routes/flashcards');
 const app = express();
 const quizRoute = require('./routes/quiz');
+const documentsRoute = require('./routes/documents');
 
 app.use(cors());
 app.use(express.json());
 app.use('/api/flashcards', flashcardsRoute);
 app.use('/api/quiz', quizRoute);
+app.use('/api/documents', documentsRoute);
 
 mongoose
   .connect(process.env.MONGO_URI)

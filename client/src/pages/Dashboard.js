@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+const API = 'https://ai-study-assistant-server-i9fd.onrender.com';
+
 function Dashboard() {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState('');
@@ -15,6 +17,8 @@ function Dashboard() {
   const [loadingQuiz, setLoadingQuiz] = useState(false);
   const [selected, setSelected] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
 
@@ -26,8 +30,11 @@ function Dashboard() {
     e.preventDefault();
     const formData = new FormData();
     formData.append('pdf', file);
+    const token = localStorage.getItem('token');
     try {
-      const res = await axios.post('https://ai-study-assistant-server-i9fd.onrender.com/api/upload', formData);
+      const res = await axios.post(`${API}/api/upload`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setMessage(res.data.message);
       setDocumentId(res.data.documentId);
       setSummary(''); setFlashcards([]); setQuestions([]);
@@ -40,7 +47,7 @@ function Dashboard() {
   const handleSummary = async () => {
     setLoadingSummary(true);
     try {
-      const res = await axios.post(`https://ai-study-assistant-server-i9fd.onrender.com/api/summary/${documentId}`);
+      const res = await axios.post(`${API}/api/summary/${documentId}`);
       setSummary(res.data.summary);
     } catch (err) { setSummary('Failed to generate summary'); }
     setLoadingSummary(false);
@@ -49,7 +56,7 @@ function Dashboard() {
   const handleFlashcards = async () => {
     setLoadingFlashcards(true);
     try {
-      const res = await axios.post(`https://ai-study-assistant-server-i9fd.onrender.com/api/flashcards/${documentId}`);
+      const res = await axios.post(`${API}/api/flashcards/${documentId}`);
       setFlashcards(res.data.flashcards);
       setFlipped({});
     } catch (err) { setFlashcards([]); }
@@ -59,7 +66,7 @@ function Dashboard() {
   const handleQuiz = async () => {
     setLoadingQuiz(true); setSubmitted(false); setSelected({});
     try {
-      const res = await axios.post(`https://ai-study-assistant-server-i9fd.onrender.com/api/quiz/${documentId}`);
+      const res = await axios.post(`${API}/api/quiz/${documentId}`);
       setQuestions(res.data.questions);
     } catch (err) { setQuestions([]); }
     setLoadingQuiz(false);
@@ -73,6 +80,27 @@ function Dashboard() {
 
   const toggleFlip = (i) => {
     setFlipped(prev => ({ ...prev, [i]: !prev[i] }));
+  };
+
+  const fetchHistory = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await axios.get(`${API}/api/documents`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHistory(res.data.documents);
+      setShowHistory(true);
+    } catch (err) {
+      console.error('Failed to fetch history');
+    }
+  };
+
+  const loadDocument = (docId) => {
+    setDocumentId(docId);
+    setSummary(''); setFlashcards([]); setQuestions([]);
+    setSelected({}); setSubmitted(false);
+    setShowHistory(false);
+    setMessage('Document loaded from history!');
   };
 
   const handleLogout = () => {
@@ -168,6 +196,18 @@ function Dashboard() {
         <h1 style={{ fontSize: '20px', fontWeight: '700', margin: 0 }}>📚 AI Study Assistant</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <span style={{ fontSize: '14px', opacity: 0.9 }}>Hi, {user?.name}!</span>
+          <button onClick={fetchHistory} style={{
+            backgroundColor: '#fef3c7',
+            color: '#92400e',
+            border: 'none',
+            padding: '6px 16px',
+            borderRadius: '8px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            fontSize: '13px'
+          }}>
+            📋 History
+          </button>
           <button onClick={handleLogout} style={{
             backgroundColor: '#fef3c7',
             color: '#92400e',
@@ -195,6 +235,59 @@ function Dashboard() {
           </form>
           {message && <p style={{ marginTop: '12px', color: '#15803d', fontWeight: '600' }}>{message}</p>}
         </div>
+
+        {/* History Panel */}
+        {showHistory && (
+          <div className="warm-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 className="warm-section-title" style={{ margin: 0 }}>📋 Upload History</h2>
+              <button onClick={() => setShowHistory(false)} style={{
+                background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#92400e'
+              }}>✕</button>
+            </div>
+            {history.length === 0 ? (
+              <p style={{ color: '#78350f', fontSize: '14px' }}>No documents uploaded yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {history.map((doc) => (
+                  <div key={doc._id} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '12px 16px',
+                    backgroundColor: '#fff7ed',
+                    borderRadius: '10px',
+                    border: '1px solid #fde68a'
+                  }}>
+                    <div>
+                      <p style={{ fontWeight: '600', color: '#44403c', margin: 0, fontSize: '14px' }}>
+                        📄 {doc.filename}
+                      </p>
+                      <p style={{ color: '#a16207', fontSize: '12px', margin: '4px 0 0 0' }}>
+                        {new Date(doc.uploadedAt).toLocaleDateString('en-US', {
+                          year: 'numeric', month: 'short', day: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    <button onClick={() => loadDocument(doc._id)} style={{
+                      backgroundColor: '#d97706',
+                      color: 'white',
+                      border: 'none',
+                      padding: '6px 14px',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      fontSize: '13px'
+                    }}>
+                      Load
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {documentId && (
           <>
