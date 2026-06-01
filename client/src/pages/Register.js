@@ -12,7 +12,7 @@ function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/auth/register', { name, email, password });
+      await axios.post('https://ai-study-assistant-server-i9fd.onrender.com/api/auth/register', { name, email, password });
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');

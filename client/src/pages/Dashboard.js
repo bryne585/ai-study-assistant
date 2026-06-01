@@ -27,7 +27,7 @@ function Dashboard() {
     const formData = new FormData();
     formData.append('pdf', file);
     try {
-      const res = await axios.post('http://localhost:5000/api/upload', formData);
+      const res = await axios.post('https://ai-study-assistant-server-i9fd.onrender.com/api/upload', formData);
       setMessage(res.data.message);
       setDocumentId(res.data.documentId);
       setSummary(''); setFlashcards([]); setQuestions([]);
@@ -40,7 +40,7 @@ function Dashboard() {
   const handleSummary = async () => {
     setLoadingSummary(true);
     try {
-      const res = await axios.post(`http://localhost:5000/api/summary/${documentId}`);
+      const res = await axios.post(`https://ai-study-assistant-server-i9fd.onrender.com/api/summary/${documentId}`);
       setSummary(res.data.summary);
     } catch (err) { setSummary('Failed to generate summary'); }
     setLoadingSummary(false);
@@ -49,7 +49,7 @@ function Dashboard() {
   const handleFlashcards = async () => {
     setLoadingFlashcards(true);
     try {
-      const res = await axios.post(`http://localhost:5000/api/flashcards/${documentId}`);
+      const res = await axios.post(`https://ai-study-assistant-server-i9fd.onrender.com/api/flashcards/${documentId}`);
       setFlashcards(res.data.flashcards);
       setFlipped({});
     } catch (err) { setFlashcards([]); }
@@ -59,7 +59,7 @@ function Dashboard() {
   const handleQuiz = async () => {
     setLoadingQuiz(true); setSubmitted(false); setSelected({});
     try {
-      const res = await axios.post(`http://localhost:5000/api/quiz/${documentId}`);
+      const res = await axios.post(`https://ai-study-assistant-server-i9fd.onrender.com/api/quiz/${documentId}`);
       setQuestions(res.data.questions);
     } catch (err) { setQuestions([]); }
     setLoadingQuiz(false);
